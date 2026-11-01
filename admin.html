@@ -446,6 +446,49 @@
                                     </div>
                                 </div>
                             )}
+                            {activeTab === 'settings' && (
+    <div className="space-y-6 max-w-2xl">
+        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+            <h3 className="text-lg font-semibold">Đổi mật khẩu tài khoản Admin</h3>
+            <form onSubmit={(e) => {
+                e.preventDefault();
+                const cur = e.target.currentPass.value;
+                const next = e.target.newPass.value;
+                if (cur !== adminPassword) { 
+                    alert('Mật khẩu hiện tại không đúng!'); 
+                    return; 
+                }
+                setAdminPassword(next);
+                alert('Đổi mật khẩu thành công!');
+                e.target.reset();
+            }} className="space-y-4">
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Mật khẩu hiện tại</label>
+                    <input type="password" name="currentPass" required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                </div>
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Mật khẩu mới</label>
+                    <input type="password" name="newPass" required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                </div>
+                <button type="submit" className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded-xl text-sm font-medium">Lưu mật khẩu mới</button>
+            </form>
+        </div>
+
+        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+            <h3 className="text-lg font-semibold">Cấu hình API Vận chuyển (SPX & Ahahome)</h3>
+            <div className="space-y-3">
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">SPX Express API Token</label>
+                    <input type="text" defaultValue="spx_live_token_xxxx" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm font-mono" />
+                </div>
+                <div>
+                    <label className="text-xs text-slate-400 block mb-1">Ahahome API Token</label>
+                    <input type="text" defaultValue="ahahome_token_yyyy" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm font-mono" />
+                </div>
+            </div>
+        </div>
+    </div>
+)}
                         </main>
                     </div>
 
