@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>MIU STORE - F1GENZ Streetwear</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { f1dark: '#0a0a0a', f1card: '#121212', f1blue: '#0055FF', f1red: '#FF0033' } } }
+    }
+  </script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .f1-border { border: 2px solid #262626; }
+    .f1-card-shadow { box-shadow: 3px 3px 0px #0055FF; }
+  </style>
+</head>
+<body class="bg-f1dark text-slate-100 pb-28 selection:bg-f1red selection:text-white">
+
+  <!-- Header F1GENZ -->
+  <header class="bg-f1card border-b-2 border-slate-800 sticky top-0 z-40 px-3 py-2.5">
+    <div class="max-w-md mx-auto flex items-center gap-2">
+      <div class="font-black text-lg italic tracking-tighter text-white flex items-center gap-1">F1<span class="text-f1blue">GENZ</span><span class="text-f1red">.</span></div>
+      <div class="flex-1 relative">
+        <input type="text" id="storeSearch" oninput="renderStoreProducts()" placeholder="SEARCH TECHWEAR..." class="w-full bg-black text-white text-xs rounded-none border-2 border-slate-700 pl-8 pr-3 py-1.5 focus:outline-none focus:border-f1blue font-mono uppercase"/>
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-2 top-2"></i>
+      </div>
+      <button onclick="openCartModal()" class="relative p-2 bg-f1blue text-white border-2 border-black">
+        <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+        <span id="cartBadge" class="absolute -top-2 -right-2 bg-f1red text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-black">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto space-y-3 p-2.5">
+    <!-- Banner F1GENZ Streetwear -->
+    <div class="relative rounded-none f1-border aspect-[21/9] bg-gradient-to-r from-f1blue to-indigo-900 text-white flex flex-col items-center justify-center p-4 text-center f1-card-shadow">
+      <span class="bg-f1red text-white font-black text-[10px] px-2 py-0.5 border border-black mb-1 uppercase tracking-widest">SIGNAL 01 // DROP</span>
+      <h2 class="font-black text-lg tracking-widest uppercase italic">TECHWEAR & STREETWEAR</h2>
+    </div>
+
+    <!-- Danh mục -->
+    <div class="sticky top-14 z-30 bg-f1dark py-1">
+      <div id="categoryTabsContainer" class="flex gap-1 overflow-x-auto no-scrollbar bg-f1card p-1 f1-border text-xs font-black uppercase">
+        <button onclick="switchCategoryTab('all', this)" class="cat-pill px-3 py-1.5 bg-f1blue text-white border border-black whitespace-nowrap">Tất cả</button>
+      </div>
+    </div>
+
+    <!-- Grid sản phẩm chuẩn F1GENZ -->
+    <div id="storeGrid" class="grid grid-cols-2 gap-2.5"></div>
+  </main>
+
+  <!-- Modal Chi Tiết -->
+  <div id="productDetailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center">
+    <div class="bg-f1card w-full max-w-md rounded-none p-4 space-y-3 max-h-[85vh] overflow-y-auto border-2 border-slate-700 f1-card-shadow">
+      <div class="flex gap-3 border-b-2 border-slate-800 pb-3 relative">
+        <div id="modalProdImgContainer" class="w-20 h-20 bg-black border-2 border-slate-700 overflow-hidden flex items-center justify-center font-black text-2xl text-f1blue">P</div>
+        <div>
+          <h3 id="modalProdName" class="font-black text-sm text-white uppercase">Tên sản phẩm</h3>
+          <p id="modalProdPrice" class="text-f1red font-black text-base mt-1 font-mono">0 đ</p>
+          <p id="modalProdStock" class="text-xs font-bold text-slate-400">Kho: 0</p>
+        </div>
+        <button onclick="closeProductDetailModal()" class="absolute right-0 top-0 text-white font-black text-xl">&times;</button>
+      </div>
+      <div class="space-y-1.5">
+        <label class="text-xs font-black uppercase text-slate-300">Phân loại:</label>
+        <div id="modalVariantsList" class="flex flex-wrap gap-1.5"></div>
+      </div>
+      <div class="flex justify-between items-center py-2 border-t-2 border-b-2 border-slate-800">
+        <span class="text-xs font-black uppercase">Số lượng:</span>
+        <div class="flex items-center border-2 border-slate-700 overflow-hidden font-black">
+          <button onclick="adjustDetailQty(-1)" class="px-3 py-1 bg-black">-</button>
+          <span id="detailQty" class="px-3 py-1 text-xs">1</span>
+          <button onclick="adjustDetailQty(1)" class="px-3 py-1 bg-black">+</button>
+        </div>
+      </div>
+      <button onclick="confirmAddToCart()" class="w-full bg-f1red hover:bg-red-700 text-white font-black py-3 border-2 border-black text-sm uppercase tracking-wider">Thêm Vào Giỏ Hàng</button>
+    </div>
+  </div>
+
+  <!-- Modal Giỏ hàng -->
+  <div id="cartModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center">
+    <div class="bg-f1card w-full max-w-md p-4 space-y-4 max-h-[90vh] flex flex-col border-2 border-slate-700 f1-card-shadow">
+      <div class="flex justify-between items-center border-b-2 border-slate-800 pb-2">
+        <h3 class="font-black text-sm text-white uppercase">GIỎ HÀNG F1GENZ</h3>
+        <button onclick="closeCartModal()" class="text-white font-black text-lg">&times;</button>
+      </div>
+      <div id="storeCartItems" class="flex-1 overflow-y-auto space-y-2 max-h-60"></div>
+      <div class="space-y-2 border-t-2 border-slate-800 pt-2 text-xs">
+        <input type="text" id="checkoutName" placeholder="Tên của bạn *" class="w-full bg-black border-2 border-slate-700 px-2.5 py-1.5 text-white"/>
+        <input type="text" id="checkoutPhone" placeholder="Số điện thoại *" class="w-full bg-black border-2 border-slate-700 px-2.5 py-1.5 text-white"/>
+        <input type="text" id="checkoutAddress" placeholder="Địa chỉ giao hàng *" class="w-full bg-black border-2 border-slate-700 px-2.5 py-1.5 text-white"/>
+        <div class="flex justify-between items-center font-black text-sm pt-2 border-t border-dashed border-slate-800">
+          <span>Tổng thanh toán:</span>
+          <span id="checkoutTotal" class="text-f1red font-mono text-base">0 đ</span>
+        </div>
+      </div>
+      <button onclick="submitStoreOrder()" class="w-full bg-f1blue hover:bg-blue-600 text-white font-black py-3 border-2 border-black text-sm uppercase tracking-wider">Xác Nhận Đặt Hàng</button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="fixed bottom-4 left-4 right-4 bg-f1card border-2 border-slate-700 py-2 px-6 flex justify-around items-center z-40 max-w-md mx-auto shadow-2xl">
+    <button class="flex flex-col items-center text-f1blue font-black"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px]">Trang chủ</span></button>
+    <button onclick="openCartModal()" class="flex flex-col items-center text-slate-400 font-bold relative"><i data-lucide="shopping-bag" class="w-5 h-5"></i><span id="cartBadgeNav" class="absolute -top-1 -right-1 bg-f1red text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-black">0</span><span class="text-[10px]">Giỏ hàng</span></button>
+  </nav>
+
+  <script>
+    const PRODUCTS_KEY = 'miu_pos_products_v7';
+    const ORDERS_KEY = 'miu_pos_orders_v7';
+    const INVENTORY_KEY = 'miu_pos_inventory_v7';
+
+    let storeCart = []; let selectedProduct = null; let selectedVariant = ''; let detailQtyVal = 1;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderCategoryTabs(); renderStoreProducts(); lucide.createIcons();
+    });
+
+    function renderCategoryTabs() {
+      const prods = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+      const categories = ['all', ...new Set(prods.map(p => p.category || 'Khác'))];
+      const container = document.getElementById('categoryTabsContainer'); container.innerHTML = '';
+      categories.forEach((cat, idx) => {
+        container.innerHTML += `<button onclick="switchCategoryTab('${cat}', this)" class="cat-pill px-3 py-1.5 border border-slate-700 whitespace-nowrap font-black text-xs uppercase ${idx===0?'bg-f1blue text-white':'hover:bg-slate-800 text-slate-300'}">${cat==='all'?'TẤT CẢ':cat}</button>`;
+      });
+    }
+
+    function renderStoreProducts(filterCat = 'all') {
+      const prods = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+      const query = (document.getElementById('storeSearch')?.value || '').toLowerCase();
+      const grid = document.getElementById('storeGrid'); grid.innerHTML = '';
+      let list = prods.filter(p => p.name.toLowerCase().includes(query) || p.id.toLowerCase().includes(query));
+      if (filterCat !== 'all') list = list.filter(p => p.category === filterCat);
+
+      list.forEach(p => {
+        grid.innerHTML += `
+          <div onclick="openProductDetail('${p.id}')" class="bg-f1card border-2 border-slate-800 overflow-hidden flex flex-col justify-between cursor-pointer hover:border-f1blue transition">
+            <div class="w-full aspect-square bg-black border-b border-slate-800 overflow-hidden flex items-center justify-center font-black text-3xl text-f1blue">
+              ${p.image ? `<img src="${p.image}" class="w-full h-full object-cover"/>` : p.name.charAt(0)}
+            </div>
+            <div class="p-2.5 space-y-1">
+              <h4 class="text-xs font-black text-white uppercase line-clamp-2">${p.name}</h4>
+              <div class="flex items-center justify-between pt-1 font-mono">
+                <span class="text-f1red font-black text-xs">${(p.salePrice || p.price).toLocaleString()} đ</span>
+                <span class="text-[10px] text-slate-500">[${p.id}]</span>
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+
+    function switchCategoryTab(cat, btn) {
+      document.querySelectorAll('.cat-pill').forEach(b => { b.className = "cat-pill px-3 py-1.5 border border-slate-700 whitespace-nowrap font-black text-xs uppercase hover:bg-slate-800 text-slate-300"; });
+      btn.className = "cat-pill px-3 py-1.5 bg-f1blue text-white border border-black whitespace-nowrap font-black text-xs uppercase";
+      renderStoreProducts(cat);
+    }
+
+    function openProductDetail(pId) {
+      const prods = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+      selectedProduct = prods.find(x => x.id === pId); if (!selectedProduct) return;
+      document.getElementById('modalProdName').innerText = selectedProduct.name;
+      document.getElementById('modalProdPrice').innerText = (selectedProduct.salePrice || selectedProduct.price).toLocaleString() + ' đ';
+      document.getElementById('modalProdStock').innerText = 'Kho: ' + selectedProduct.stock;
+      document.getElementById('modalProdImgContainer').innerHTML = selectedProduct.image ? `<img src="${selectedProduct.image}" class="w-full h-full object-cover"/>` : selectedProduct.name.charAt(0);
+      detailQtyVal = 1; document.getElementById('detailQty').innerText = 1;
+
+      const vList = selectedProduct.variants || ['S', 'M', 'L']; selectedVariant = vList[0];
+      const vContainer = document.getElementById('modalVariantsList'); vContainer.innerHTML = '';
+      vList.forEach((v, idx) => {
+        vContainer.innerHTML += `<button onclick="selectedVariant='${v}'; this.parentElement.querySelectorAll('button').forEach(b=>b.className='px-3 py-1 text-xs font-black border border-slate-700 bg-black text-slate-300'); this.className='px-3 py-1 text-xs font-black border border-f1blue bg-f1blue text-white';" class="px-3 py-1 text-xs font-black border border-slate-700 ${idx===0?'bg-f1blue text-white':'bg-black text-slate-300'}">${v}</button>`;
+      });
+      document.getElementById('productDetailModal').classList.remove('hidden');
+    }
+    function closeProductDetailModal() { document.getElementById('productDetailModal').classList.add('hidden'); }
+    function adjustDetailQty(d) { detailQtyVal = Math.max(1, detailQtyVal + d); document.getElementById('detailQty').innerText = detailQtyVal; }
+
+    function confirmAddToCart() {
+      if (!selectedProduct) return;
+      const ex = storeCart.find(i => i.id === selectedProduct.id && i.variant === selectedVariant);
+      if (ex) ex.qty += detailQtyVal; else storeCart.push({ id: selectedProduct.id, name: selectedProduct.name, variant: selectedVariant, price: selectedProduct.salePrice || selectedProduct.price, qty: detailQtyVal });
+      const count = storeCart.reduce((s,i)=>s+i.qty,0);
+      document.getElementById('cartBadge').innerText = count; document.getElementById('cartBadgeNav').innerText = count;
+      closeProductDetailModal(); openCartModal();
+    }
+
+    function openCartModal() {
+      const container = document.getElementById('storeCartItems'); container.innerHTML = '';
+      if (storeCart.length === 0) { container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">GIỎ HÀNG TRỐNG</p>`; document.getElementById('checkoutTotal').innerText = '0 đ'; }
+      else {
+        let total = 0;
+        storeCart.forEach((item, idx) => {
+          total += item.price * item.qty;
+          container.innerHTML += `<div class="flex justify-between items-center p-2 bg-black border border-slate-800 text-xs font-bold"><div><h5 class="font-black text-white uppercase">${item.name}</h5><p class="text-[10px] text-slate-400">${item.variant} (x${item.qty})</p></div><div class="flex items-center gap-2"><span class="font-mono text-f1red">${(item.price * item.qty).toLocaleString()} đ</span><button onclick="storeCart.splice(${idx},1); openCartModal();" class="text-f1red font-black">X</button></div></div>`;
+        });
+        document.getElementById('checkoutTotal').innerText = total.toLocaleString() + ' đ';
+      }
+      document.getElementById('cartModal').classList.remove('hidden');
+    }
+    function closeCartModal() { document.getElementById('cartModal').classList.add('hidden'); }
+
+    function submitStoreOrder() {
+      const name = document.getElementById('checkoutName').value.trim();
+      const phone = document.getElementById('checkoutPhone').value.trim();
+      const address = document.getElementById('checkoutAddress').value.trim();
+      if (!name || !phone || !address) { alert('Điền đủ thông tin!'); return; }
+      if (storeCart.length === 0) { alert('Giỏ hàng trống!'); return; }
+
+      const total = storeCart.reduce((s,i)=>s+i.price*i.qty,0);
+      const orderId = 'F1' + String(new Date().getFullYear()).slice(-2) + Math.floor(1000 + Math.random() * 9000);
+      const nowStr = new Date().toLocaleString('vi-VN');
+
+      const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
+      orders.push({ id: orderId, createdAt: nowStr, customerName: name, customerPhone: phone, customerAddress: address, items: [...storeCart], finalAmount: total, status: 'Chờ xác nhận' });
+      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+
+      // Trừ kho
+      const prods = JSON.parse(localStorage.getItem(PRODUCTS_KEY) || '[]');
+      const inv = JSON.parse(localStorage.getItem(INVENTORY_KEY) || '[]');
+      storeCart.forEach(item => {
+        const p = prods.find(x => x.id === item.id);
+        if (p) {
+          p.stock = Math.max(0, p.stock - item.qty);
+          inv.push({ date: nowStr, type: 'Xuất', productName: p.name, change: -item.qty, note: `Online order ${orderId}` });
+        }
+      });
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(prods));
+      localStorage.setItem(INVENTORY_KEY, JSON.stringify(inv));
+
+      alert(`ĐẶT HÀNG THÀNH CÔNG! Mã đơn: ${orderId}`);
+      storeCart = []; document.getElementById('cartBadge').innerText = 0; document.getElementById('cartBadgeNav').innerText = 0;
+      closeCartModal(); renderStoreProducts();
+    }
+  </script>
+</body>
+</html>

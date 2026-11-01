@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIU STORE - Nintendo Switch Admin v2.9</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function AdminApp() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+
+            // --- MOCK DATA & STATES ---
+            const [categories, setCategories] = useState([
+                { id: 1, name: 'Nintendo Switch Games', parentId: null },
+                { id: 2, name: 'Game Thẻ Nhớ', parentId: 1 },
+                { id: 3, name: 'Game Digital (Acc/Code)', parentId: 1 },
+                { id: 4, name: 'Phụ kiện Nintendo', parentId: null },
+                { id: 5, name: 'Tay cầm Pro Controller', parentId: 4 },
+            ]);
+
+            const [products, setProducts] = useState([
+                {
+                    id: 1,
+                    sku: 'PD0001',
+                    name: 'The Legend of Zelda: Tears of the Kingdom',
+                    categoryId: 2,
+                    image: 'https://images.unsplash.com/photo-1612287233306-6043743c9459?w=300',
+                    videoUrl: '',
+                    compatibleDevices: 'Nintendo Switch OLED, V2, Lite',
+                    description: 'Bom tấn phiêu lưu thế giới mở độc quyền.',
+                    costPrice: 1000000,
+                    sellingPrice: 1250000,
+                    salePrice: 1150000,
+                    stock: 18,
+                    isPreorder: false,
+                }
+            ]);
+
+            const [customers, setCustomers] = useState([
+                { id: 1, name: 'Nguyễn Văn A', phone: '0901234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM', totalSpent: 2650000, social: 'facebook.com/vana' }
+            ]);
+
+            const [orders, setOrders] = useState([
+                {
+                    id: 1,
+                    code: 'M260001',
+                    customerPhone: '0901234567',
+                    customerName: 'Nguyễn Văn A',
+                    items: [{ sku: 'PD0001', name: 'The Legend of Zelda: Tears of the Kingdom', price: 1150000, qty: 1 }],
+                    totalAmount: 1150000,
+                    deposit: 200000,
+                    shippingFee: 30000,
+                    discount: 50000,
+                    shippingMethod: 'SPX Express',
+                    tag: 'Hỏa tốc',
+                    note: 'Giao giờ hành chính',
+                    status: 'shipping', 
+                    trackingCode: 'SPXVN987654321',
+                    shippingProvider: 'SPX',
+                    createdAt: '2026-11-01'
+                }
+            ]);
+
+            const [adminPassword, setAdminPassword] = useState('admin123');
+
+            // --- MODAL STATES ---
+            const [showProductModal, setShowProductModal] = useState(false);
+            const [editingProduct, setEditingProduct] = useState(null);
+
+            const [showOrderModal, setShowOrderModal] = useState(false);
+            const [editingOrder, setEditingOrder] = useState(null);
+
+            const [showCustomerModal, setShowCustomerModal] = useState(false);
+            const [editingCustomer, setEditingCustomer] = useState(null);
+
+            const [showCategoryModal, setShowCategoryModal] = useState(false);
+            const [showStockModal, setShowStockModal] = useState(false);
+            const [inventoryLogs, setInventoryLogs] = useState([]);
+
+            useEffect(() => {
+                lucide.createIcons();
+            }, [activeTab, showProductModal, showOrderModal, showCustomerModal, showCategoryModal, showStockModal]);
+
+            // Handle Product Save
+            const handleSaveProduct = (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const name = form.name.value;
+                const categoryId = parseInt(form.categoryId.value);
+                const sku = form.sku.value;
+                const videoUrl = form.videoUrl.value;
+                const compatibleDevices = form.compatibleDevices.value;
+                const description = form.description.value;
+                const costPrice = parseFloat(form.costPrice.value) || 0;
+                const sellingPrice = parseFloat(form.sellingPrice.value) || 0;
+                const salePrice = parseFloat(form.salePrice.value) || 0;
+                const stock = parseInt(form.stock.value) || 0;
+                const isPreorder = form.isPreorder.checked;
+
+                const fileInput = form.imageFile;
+                let image = editingProduct ? editingProduct.image : 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300';
+                
+                if (form.imageUrl.value) {
+                    image = form.imageUrl.value;
+                }
+
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(uploadEvent) {
+                        saveProductFinal(uploadEvent.target.result);
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                } else {
+                    saveProductFinal(image);
+                }
+
+                function saveProductFinal(finalImage) {
+                    if (editingProduct) {
+                        setProducts(products.map(p => p.id === editingProduct.id ? {
+                            ...p, name, categoryId, sku, image: finalImage, videoUrl, compatibleDevices, description, costPrice, sellingPrice, salePrice, stock, isPreorder
+                        } : p));
+                    } else {
+                        const newProduct = {
+                            id: Date.now(),
+                            sku: sku || `PD${String(products.length + 1).padStart(4, '0')}`,
+                            name, categoryId, image: finalImage, videoUrl, compatibleDevices, description, costPrice, sellingPrice, salePrice, stock, isPreorder
+                        };
+                        setProducts([...products, newProduct]);
+                    }
+                    setShowProductModal(false);
+                    setEditingProduct(null);
+                }
+            };
+
+            const handleSaveOrder = (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const customerPhone = form.customerPhone.value;
+                const customerName = form.customerName.value;
+                const shippingMethod = form.shippingMethod.value;
+                const deposit = parseFloat(form.deposit.value) || 0;
+                const discount = parseFloat(form.discount.value) || 0;
+                const shippingFee = parseFloat(form.shippingFee.value) || 0;
+                const tag = form.tag.value;
+                const note = form.note.value;
+
+                if (editingOrder) {
+                    setOrders(orders.map(o => o.id === editingOrder.id ? {
+                        ...o, customerPhone, customerName, shippingMethod, deposit, discount, shippingFee, tag, note
+                    } : o));
+                } else {
+                    const newCode = `M26${String(orders.length + 1).padStart(4, '0')}`;
+                    const newOrder = {
+                        id: Date.now(),
+                        code: newCode,
+                        customerPhone,
+                        customerName,
+                        items: [{ sku: products[0].sku, name: products[0].name, price: products[0].salePrice || products[0].sellingPrice, qty: 1 }],
+                        totalAmount: (products[0].salePrice || products[0].sellingPrice) + shippingFee - discount,
+                        deposit,
+                        shippingFee,
+                        discount,
+                        shippingMethod,
+                        tag,
+                        note,
+                        status: 'pending',
+                        trackingCode: '',
+                        shippingProvider: shippingMethod.includes('SPX') ? 'SPX' : 'Ahahome',
+                        createdAt: new Date().toISOString().split('T')[0]
+                    };
+                    setOrders([...orders, newOrder]);
+                }
+                setShowOrderModal(false);
+                setEditingOrder(null);
+            };
+
+            return (
+                <div className="flex h-screen bg-slate-900 text-slate-100 font-sans">
+                    {/* SIDEBAR */}
+                    <div className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col">
+                        <div className="p-5 border-b border-slate-800">
+                            <h1 className="text-xl font-bold text-pink-400 flex items-center gap-2">
+                                <i data-lucide="package" className="w-6 h-6"></i> MIU STORE
+                            </h1>
+                            <p className="text-xs text-slate-400 mt-1">Nintendo Switch Admin v2.9</p>
+                        </div>
+                        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                            {[
+                                { id: 'dashboard', label: 'Tổng quan Dashboard', icon: 'package' },
+                                { id: 'categories', label: 'Quản lý Danh mục', icon: 'tag' },
+                                { id: 'products', label: 'Sản phẩm & Biến thể', icon: 'package' },
+                                { id: 'inventory', label: 'Kho & Xuất/Nhập hàng', icon: 'warehouse' },
+                                { id: 'orders', label: 'Quản lý Đơn hàng', icon: 'shopping-cart' },
+                                { id: 'customers', label: 'Khách hàng / CRM', icon: 'users' },
+                                { id: 'settings', label: 'Cài đặt & Bảo mật', icon: 'settings' },
+                            ].map(item => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveTab(item.id)}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                                        activeTab === item.id 
+                                            ? 'bg-pink-600 text-white shadow-lg shadow-pink-600/30' 
+                                            : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+                                    }`}
+                                >
+                                    <i data-lucide={item.icon} className="w-5 h-5"></i>
+                                    {item.label}
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+
+                    {/* MAIN CONTENT AREA */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <header className="h-16 bg-slate-950 border-b border-slate-800 px-6 flex items-center justify-between">
+                            <h2 className="text-lg font-semibold capitalize">
+                                {activeTab === 'dashboard' && 'Tổng quan hệ thống'}
+                                {activeTab === 'categories' && 'Quản lý Danh mục Cha/Con'}
+                                {activeTab === 'products' && 'Danh mục Sản phẩm Nintendo Switch'}
+                                {activeTab === 'inventory' && 'Quản lý Kho hàng & Giá vốn'}
+                                {activeTab === 'orders' && 'Quản lý Đơn hàng (MYYXXXX)'}
+                                {activeTab === 'customers' && 'Hồ sơ Khách hàng & Thành viên'}
+                                {activeTab === 'settings' && 'Cài đặt Tài khoản & Vận chuyển'}
+                            </h2>
+                            <div className="flex items-center gap-4">
+                                <span className="text-xs bg-pink-500/10 text-pink-400 px-3 py-1.5 rounded-full border border-pink-500/20 font-medium">
+                                    Admin: Quỳnh Miu (Online)
+                                </span>
+                            </div>
+                        </header>
+
+                        <main className="flex-1 overflow-y-auto p-6 bg-slate-900">
+                            {activeTab === 'dashboard' && (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-400 text-sm">Tổng doanh thu tháng</p>
+                                            <h3 className="text-2xl font-bold mt-2 text-emerald-400">14.500.000 đ</h3>
+                                        </div>
+                                        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-400 text-sm">Đơn hàng mới</p>
+                                            <h3 className="text-2xl font-bold mt-2 text-pink-400">12 Đơn</h3>
+                                        </div>
+                                        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-400 text-sm">Sản phẩm tồn kho</p>
+                                            <h3 className="text-2xl font-bold mt-2 text-blue-400">26 Sản phẩm</h3>
+                                        </div>
+                                        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                                            <p className="text-slate-400 text-sm">Khách hàng thành viên</p>
+                                            <h3 className="text-2xl font-bold mt-2 text-purple-400">48 Người</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB: QUẢN LÝ DANH MỤC */}
+                            {activeTab === 'categories' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold">Danh mục sản phẩm Cha / Con</h3>
+                                        <button onClick={() => setShowCategoryModal(true)} className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+                                            <i data-lucide="plus" className="w-4 h-4"></i> Thêm danh mục mới
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                                                <tr>
+                                                    <th className="p-4">ID</th>
+                                                    <th className="p-4">Tên danh mục</th>
+                                                    <th className="p-4">Cấp độ / Danh mục cha</th>
+                                                    <th className="p-4 text-right">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {categories.map(cat => {
+                                                    const parent = categories.find(c => c.id === cat.parentId);
+                                                    return (
+                                                        <tr key={cat.id} className="border-b border-slate-800/50 hover:bg-slate-900/50">
+                                                            <td className="p-4 font-mono">#{cat.id}</td>
+                                                            <td className="p-4 font-medium text-white">{cat.name}</td>
+                                                            <td className="p-4 text-slate-400">
+                                                                {parent ? (
+                                                                    <span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded text-xs border border-pink-500/20">
+                                                                        Con của: {parent.name}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-xs">
+                                                                        Danh mục gốc (Cha)
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="p-4 text-right">
+                                                                <button onClick={() => setCategories(categories.filter(c => c.id !== cat.id))} className="text-red-400 hover:text-red-300 p-1">
+                                                                    <i data-lucide="trash-2" className="w-4 h-4 inline"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'products' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold">Danh sách Game & Phụ kiện Nintendo Switch</h3>
+                                        <button onClick={() => { setEditingProduct(null); setShowProductModal(true); }} className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+                                            <i data-lucide="plus" className="w-4 h-4"></i> Thêm sản phẩm mới
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                                                <tr>
+                                                    <th className="p-4">Sản phẩm</th>
+                                                    <th className="p-4">Mã SKU</th>
+                                                    <th className="p-4">Giá vốn sản phẩm</th>
+                                                    <th className="p-4">Giá bán / Sale</th>
+                                                    <th className="p-4">Tồn kho</th>
+                                                    <th className="p-4 text-right">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {products.map(p => (
+                                                    <tr key={p.id} className="border-b border-slate-800/50 hover:bg-slate-900/50">
+                                                        <td className="p-4 flex items-center gap-3">
+                                                            <img src={p.image} alt="" className="w-10 h-10 rounded-lg object-cover bg-slate-800" />
+                                                            <div>
+                                                                <p className="font-medium text-white">{p.name}</p>
+                                                                {p.isPreorder && <span className="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">Pre-order</span>}
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4 font-mono text-pink-400">{p.sku}</td>
+                                                        <td className="p-4 text-slate-300 font-semibold">{p.costPrice.toLocaleString()} đ</td>
+                                                        <td className="p-4">
+                                                            <span className="line-through text-slate-500 text-xs mr-2">{p.sellingPrice.toLocaleString()} đ</span>
+                                                            <span className="text-emerald-400 font-semibold">{p.salePrice.toLocaleString()} đ</span>
+                                                        </td>
+                                                        <td className="p-4 font-bold">{p.stock}</td>
+                                                        <td className="p-4 text-right space-x-2">
+                                                            <button onClick={() => { setEditingProduct(p); setShowProductModal(true); }} className="text-slate-400 hover:text-white">
+                                                                <i data-lucide="edit" className="w-4 h-4 inline"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'orders' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold">Quản lý Đơn hàng (MYYXXXX)</h3>
+                                        <button onClick={() => { setEditingOrder(null); setShowOrderModal(true); }} className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+                                            <i data-lucide="plus" className="w-4 h-4"></i> Tạo đơn hàng mới
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                                                <tr>
+                                                    <th className="p-4">Mã đơn</th>
+                                                    <th className="p-4">Khách hàng</th>
+                                                    <th className="p-4">Tổng tiền / Cọc</th>
+                                                    <th className="p-4">Vận chuyển</th>
+                                                    <th className="p-4">Trạng thái</th>
+                                                    <th className="p-4 text-right">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {orders.map(o => (
+                                                    <tr key={o.id} className="border-b border-slate-800/50 hover:bg-slate-900/50">
+                                                        <td className="p-4 font-mono font-bold text-pink-400">{o.code}</td>
+                                                        <td className="p-4">
+                                                            <p className="font-medium text-white">{o.customerName}</p>
+                                                            <p className="text-xs text-slate-400">{o.customerPhone}</p>
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <p className="text-emerald-400 font-semibold">{o.totalAmount.toLocaleString()} đ</p>
+                                                        </td>
+                                                        <td className="p-4 text-slate-300 text-xs">{o.shippingMethod}</td>
+                                                        <td className="p-4 text-xs font-medium text-blue-400">{o.status.toUpperCase()}</td>
+                                                        <td className="p-4 text-right">
+                                                            <button onClick={() => { setEditingOrder(o); setShowOrderModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 inline-flex">
+                                                                <i data-lucide="edit" className="w-3.5 h-3.5"></i> Chỉnh sửa đơn
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'customers' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-semibold">Khách hàng & Thành viên CRM</h3>
+                                        <button onClick={() => { setEditingCustomer(null); setShowCustomerModal(true); }} className="bg-pink-600 hover:bg-pink-500 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+                                            <i data-lucide="plus" className="w-4 h-4"></i> Thêm khách hàng mới
+                                        </button>
+                                    </div>
+                                    <div className="bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                                                <tr>
+                                                    <th className="p-4">Khách hàng</th>
+                                                    <th className="p-4">Số điện thoại</th>
+                                                    <th className="p-4">Địa chỉ giao nhận</th>
+                                                    <th className="p-4">Tổng chi tiêu</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {customers.map(c => (
+                                                    <tr key={c.id} className="border-b border-slate-800/50 hover:bg-slate-900/50">
+                                                        <td className="p-4 font-medium text-white">{c.name}</td>
+                                                        <td className="p-4 text-pink-400">{c.phone}</td>
+                                                        <td className="p-4 text-slate-300">{c.address}</td>
+                                                        <td className="p-4 font-semibold text-emerald-400">{c.totalSpent.toLocaleString()} đ</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </main>
+                    </div>
+
+                    {/* CATEGORY MODAL */}
+                    {showCategoryModal && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+                            <div className="bg-slate-950 border border-slate-800 w-full max-w-md rounded-2xl p-6">
+                                <h3 className="text-lg font-bold mb-4">Thêm danh mục mới</h3>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const name = e.target.catName.value;
+                                    const parentId = e.target.parentId.value ? parseInt(e.target.parentId.value) : null;
+                                    setCategories([...categories, { id: Date.now(), name, parentId }]);
+                                    setShowCategoryModal(false);
+                                }} className="space-y-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Tên danh mục</label>
+                                        <input type="text" name="catName" required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" placeholder="Ví dụ: Game Thẻ Nhớ..." />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Danh mục cha (Tùy chọn)</label>
+                                        <select name="parentId" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm">
+                                            <option value="">--- Không có (Danh mục gốc) ---</option>
+                                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <button type="button" onClick={() => setShowCategoryModal(false)} className="px-4 py-2 rounded-xl text-sm bg-slate-800 text-slate-300">Hủy</button>
+                                        <button type="submit" className="px-4 py-2 rounded-xl text-sm bg-pink-600 text-white font-medium">Tạo danh mục</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PRODUCT MODAL */}
+                    {showProductModal && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+                            <div className="bg-slate-950 border border-slate-800 w-full max-w-xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+                                <h3 className="text-lg font-bold mb-4">{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm mới sản phẩm'}</h3>
+                                <form onSubmit={handleSaveProduct} className="space-y-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Tên sản phẩm</label>
+                                        <input type="text" name="name" defaultValue={editingProduct?.name} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Mã SKU</label>
+                                            <input type="text" name="sku" defaultValue={editingProduct?.sku || `PD${String(products.length + 1).padStart(4, '0')}`} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm font-mono" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Danh mục</label>
+                                            <select name="categoryId" defaultValue={editingProduct?.categoryId} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm">
+                                                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-4 bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                                        <div>
+                                            <label className="text-xs text-pink-400 font-semibold block mb-1">Tải ảnh từ thiết bị</label>
+                                            <input type="file" name="imageFile" accept="image/*" className="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-pink-600 file:text-white hover:file:bg-pink-500 cursor-pointer" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Hoặc dán Link ảnh</label>
+                                            <input type="text" name="imageUrl" defaultValue={editingProduct?.image} placeholder="https://..." className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-white text-xs" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Thiết bị tương thích</label>
+                                        <input type="text" name="compatibleDevices" defaultValue={editingProduct?.compatibleDevices} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="text-xs text-pink-400 font-semibold block mb-1">Giá vốn sản phẩm</label>
+                                            <input type="number" name="costPrice" defaultValue={editingProduct?.costPrice || 0} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Giá bán</label>
+                                            <input type="number" name="sellingPrice" defaultValue={editingProduct?.sellingPrice} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Giá Sale</label>
+                                            <input type="number" name="salePrice" defaultValue={editingProduct?.salePrice} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Tồn kho</label>
+                                            <input type="number" name="stock" defaultValue={editingProduct?.stock || 10} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                        <div className="flex items-center pt-5">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" name="isPreorder" defaultChecked={editingProduct?.isPreorder} className="rounded bg-slate-900 border-slate-700 text-pink-600" />
+                                                <span className="text-sm">Pre-order</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-4">
+                                        <button type="button" onClick={() => setShowProductModal(false)} className="px-4 py-2 rounded-xl text-sm bg-slate-800 text-slate-300">Hủy</button>
+                                        <button type="submit" className="px-4 py-2 rounded-xl text-sm bg-pink-600 text-white font-medium">Lưu sản phẩm</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ORDER MODAL */}
+                    {showOrderModal && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+                            <div className="bg-slate-950 border border-slate-800 w-full max-w-lg rounded-2xl p-6">
+                                <h3 className="text-lg font-bold mb-4">{editingOrder ? 'Chỉnh sửa đơn hàng: ' + editingOrder.code : 'Tạo đơn hàng mới (MYYXXXX)'}</h3>
+                                <form onSubmit={handleSaveOrder} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Số điện thoại khách</label>
+                                            <input type="text" name="customerPhone" defaultValue={editingOrder?.customerPhone} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Tên khách hàng</label>
+                                            <input type="text" name="customerName" defaultValue={editingOrder?.customerName} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Hình thức giao hàng</label>
+                                            <select name="shippingMethod" defaultValue={editingOrder?.shippingMethod || 'SPX Express'} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm">
+                                                <option value="SPX Express">SPX Express</option>
+                                                <option value="Ahahome Nhanh">Ahahome Nhanh</option>
+                                                <option value="Nhận tại cửa hàng">Nhận tại cửa hàng</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Tag đơn hàng</label>
+                                            <input type="text" name="tag" defaultValue={editingOrder?.tag || 'Hỏa tốc'} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Tiền cọc trước</label>
+                                            <input type="number" name="deposit" defaultValue={editingOrder?.deposit || 0} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Giảm giá</label>
+                                            <input type="number" name="discount" defaultValue={editingOrder?.discount || 0} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400 block mb-1">Phí vận chuyển</label>
+                                            <input type="number" name="shippingFee" defaultValue={editingOrder?.shippingFee || 30000} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Ghi chú</label>
+                                        <textarea name="note" defaultValue={editingOrder?.note} rows="2" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm"></textarea>
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-4">
+                                        <button type="button" onClick={() => setShowOrderModal(false)} className="px-4 py-2 rounded-xl text-sm bg-slate-800 text-slate-300">Hủy</button>
+                                        <button type="submit" className="px-4 py-2 rounded-xl text-sm bg-pink-600 text-white font-medium">Lưu thay đổi</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* CUSTOMER MODAL */}
+                    {showCustomerModal && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+                            <div className="bg-slate-950 border border-slate-800 w-full max-w-md rounded-2xl p-6">
+                                <h3 className="text-lg font-bold mb-4">{editingCustomer ? 'Chỉnh sửa khách hàng' : 'Thêm mới khách hàng'}</h3>
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const name = e.target.name.value;
+                                    const phone = e.target.phone.value;
+                                    const address = e.target.address.value;
+                                    const social = e.target.social.value;
+                                    if (editingCustomer) {
+                                        setCustomers(customers.map(c => c.id === editingCustomer.id ? { ...c, name, phone, address, social } : c));
+                                    } else {
+                                        setCustomers([...customers, { id: Date.now(), name, phone, address, social, totalSpent: 0 }]);
+                                    }
+                                    setShowCustomerModal(false);
+                                }} className="space-y-4">
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Họ tên khách hàng</label>
+                                        <input type="text" name="name" defaultValue={editingCustomer?.name} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Số điện thoại</label>
+                                        <input type="text" name="phone" defaultValue={editingCustomer?.phone} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Địa chỉ giao nhận</label>
+                                        <input type="text" name="address" defaultValue={editingCustomer?.address} required className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Link mạng xã hội</label>
+                                        <input type="text" name="social" defaultValue={editingCustomer?.social} className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white text-sm" />
+                                    </div>
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <button type="button" onClick={() => setShowCustomerModal(false)} className="px-4 py-2 rounded-xl text-sm bg-slate-800 text-slate-300">Hủy</button>
+                                        <button type="submit" className="px-4 py-2 rounded-xl text-sm bg-pink-600 text-white font-medium">Lưu khách hàng</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<AdminApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
